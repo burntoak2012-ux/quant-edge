@@ -5,10 +5,10 @@ export default function Dashboard() {
   const [signals, setSignals] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch("http://localhost:8000/signal")
+    fetch("http://127.0.0.1:8000/signal")
       .then((res) => res.json())
-      .then(setSignals)
-      .catch(() => console.log("No backend yet"));
+      .then((data) => setSignals(data))
+      .catch((err) => console.log("ERROR:", err));
   }, []);
 
   return (
