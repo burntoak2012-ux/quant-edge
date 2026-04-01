@@ -249,9 +249,10 @@ return (
 </td>
     </tr>
   ) : (
-    displayedRows.map((row, i) => {
-  return (
-    <tr key={i} className="border-t border-gray-100 hover:bg-gray-50">
+  
+  displayedRows.map((row: Signal, i: number) => {
+    return (
+      <tr key={i} className="border-t border-gray-100 hover:bg-gray-50">
       
       {/* Match */}
       <td className="p-3">
@@ -329,6 +330,8 @@ return (
   );
 })
   )}
+
+  
 </tbody>
           </table>
         </div>
@@ -340,7 +343,7 @@ return (
     </p>
 
     <div className="space-y-2">
-      {lockedRows.map((row, i) => (
+      {lockedRows.map((row: Signal, i: number) => (
         <div
           key={i}
           className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 opacity-60 blur-[1px]"
@@ -408,3 +411,4 @@ return (
   </div>
 );
 }
+
