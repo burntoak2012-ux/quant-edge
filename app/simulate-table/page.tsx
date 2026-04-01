@@ -19,7 +19,7 @@ export default function SimulateTablePage() {
     fetch("http://127.0.0.1:8000/simulate-table")
       .then((res) => res.json())
       .then((data) => setRows(data))
-      .catch((err) => console.log("ERROR:", err));
+      .catch((err) => console.error("ERROR:", err));
   }, []);
 
   return (
