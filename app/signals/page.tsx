@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useUser } from "@clerk/nextjs";
 
 type Signal = {
   match: string;
@@ -19,28 +20,43 @@ away_missing_players: { name: string; importance: string }[];
 };
 
 export default function SignalsPage() {
-  const [rows, setRows] = useState<Signal[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isPro, setIsPro] = useState(false);
-  const [sortBy, setSortBy] = useState("edge-desc");
+  const { user, isLoaded, isSignedIn } = useUser();
+
+
+
+const isProUser =
+  isLoaded &&
+  isSignedIn &&
+  user?.publicMetadata?.plan === "pro";
+  console.log("isProUser =", isProUser, "metadata =", user?.publicMetadata);
+  const [rows, setRows] = useState([]);
+const [loading, setLoading] = useState(true);
+const [sortBy, setSortBy] = useState("edge-desc");
 const [confidenceFilter, setConfidenceFilter] = useState("All");
 const [minEdgeFilter, setMinEdgeFilter] = useState("All");
 
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const success = params.get("success");
 
- useEffect(() => {
+  
+}, []);
+
+useEffect(() => {
   fetch("http://127.0.0.1:8000/signal")
     .then((res) => res.json())
     .then((data) => {
       setRows(data.all || []);
+      setLoading(false);
     })
     .catch((err) => {
       console.error("FETCH ERROR:", err);
-      setRows([]);
-    })
-    .finally(() => {
       setLoading(false);
     });
 }, []);
+
+if (!isLoaded) return <div>Loading...</div>;
+if (loading) return <div>Loading signals...</div>;
   const filteredRows = rows.filter((row) => {
   const confidenceMatch =
     confidenceFilter === "All" ||
@@ -65,53 +81,76 @@ const sortedRows = [...filteredRows].sort((a, b) => {
 });
 
 const visibleRows = sortedRows;
-const freeRows = visibleRows.slice(0, 1);
-const displayedRows = isPro ? visibleRows : freeRows;
+const freeRows = visibleRows.slice(0, 3);
+const displayedRows = isProUser ? visibleRows : freeRows;
+const lockedRows = !isProUser ? visibleRows.slice(3, 6) : [];
 
+const totalSignals = displayedRows.length;
 
-  console.log("ROWS:", rows);
-console.log("VISIBLE ROWS:", visibleRows);
-
-  if (loading) {
-    return <div className="p-10">Loading signals...</div>;
-  }
-const totalSignals = visibleRows.length;
-
-const highConfidenceCount = visibleRows.filter(
+const highConfidenceCount = displayedRows.filter(
   (row) => row.confidence === "HIGH"
 ).length;
 
 const avgEdge =
   totalSignals > 0
-    ? visibleRows.reduce((sum, row) => sum + row.best_edge, 0) / totalSignals
+    ? displayedRows.reduce((sum, row) => sum + row.best_edge, 0) / totalSignals
     : 0;
-  return (
-    <div className="bg-gray-50 min-h-screen py-10 px-6">
-      <div className="max-w-6xl mx-auto">
+
+return (
+  <div className="bg-gray-50 min-h-screen">
+    <div className="max-w-6xl mx-auto">
+
+    {!isProUser && (
+  <div className="flex justify-end mb-4">
+    <button
+      onClick={async () => {
+        const res = await fetch("/api/checkout", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            clerkUserId: user?.id,
+          }),
+        });
+
+        const data = await res.json();
+
+        if (data.url) {
+          window.location.href = data.url;
+        }
+      }}
+      className="rounded-lg bg-black px-4 py-2 text-white"
+    >
+      Upgrade to Pro
+    </button>
+  </div>
+)}
+
+
+
 
         {/* Header */}
         <h1 className="text-4xl font-bold mb-3">⚡ Quant Edge</h1>
+        
 <p className="text-gray-600 mb-8 max-w-2xl">
   AI-powered football value bets, fair odds, and market edges in one place.
 </p>
 
-        {/* Toggle */}
-        <div className="mb-8 flex items-center gap-3">
-          <span>Free</span>
-          <button
-            onClick={() => setIsPro(!isPro)}
-            className={`w-12 h-6 flex items-center rounded-full p-1 transition ${
-              isPro ? "bg-green-500" : "bg-gray-300"
-            }`}
-          >
-            <div
-              className={`bg-white w-4 h-4 rounded-full shadow-md transform transition ${
-                isPro ? "translate-x-6" : ""
-              }`}
-            />
-          </button>
-          <span>Pro</span>
-        </div>
+        <div className="mb-4 flex items-center gap-3">
+  <span className="text-sm text-gray-600">Plan:</span>
+  <span
+    className={`rounded-full px-3 py-1 text-sm ${
+      isProUser
+        ? "bg-green-100 text-green-700"
+        : "bg-gray-100 text-gray-700"
+    }`}
+  >
+    {isProUser ? "Pro" : "Free"}
+  </span>
+</div>
+  
+    
 
 
 
@@ -197,7 +236,7 @@ const avgEdge =
               </tr>
             </thead>
             <tbody>
-  {visibleRows.length === 0 ? (
+  {displayedRows.length === 0 ? (
     <tr>
       <td colSpan={8} className="py-16 px-10 text-center">
   <div className="flex flex-col items-center gap-2 text-gray-500">
@@ -294,14 +333,14 @@ const avgEdge =
           </table>
         </div>
 
-        {!isPro && visibleRows.length > 1 && (
+        {!isProUser && lockedRows.length > 0 && (
   <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
-    <p className="mb-2 text-sm font-medium text-gray-700">
+    <p className="mb-3 text-sm font-medium text-gray-700">
       More Pro Signals
     </p>
 
     <div className="space-y-2">
-      {visibleRows.slice(1, 4).map((row, i) => (
+      {lockedRows.map((row, i) => (
         <div
           key={i}
           className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 opacity-60 blur-[1px]"
@@ -316,8 +355,9 @@ const avgEdge =
 )}
 
 
+
         {/* Paywall */}
-        {!isPro && (
+        {!isProUser && (
   <div className="mt-8 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-6 shadow-sm">
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div>
@@ -344,9 +384,18 @@ const avgEdge =
         <p className="mt-2 text-3xl font-bold text-gray-900">£19</p>
         <p className="text-sm text-gray-500">per month</p>
 
-        <button className="mt-4 w-full rounded-xl bg-black py-3 text-white font-medium hover:opacity-90 transition">
-          Upgrade to Pro
-        </button>
+        {isProUser ? (
+  <button className="mt-4 w-full rounded-xl border border-gray-300 py-3 text-gray-500 cursor-default">
+    Current Plan
+  </button>
+) : (
+  <button
+    onClick={() => (window.location.href = "/pricing")}
+    className="mt-4 w-full rounded-xl bg-black py-3 text-white font-medium hover:opacity-90 transition"
+  >
+    Upgrade to Pro
+  </button>
+)}
 
         <p className="mt-3 text-xs text-gray-400">
           Cancel anytime
@@ -355,4 +404,7 @@ const avgEdge =
     </div>
   </div>
 )}
-
+    </div>
+  </div>
+);
+}

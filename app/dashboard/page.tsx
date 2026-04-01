@@ -8,7 +8,7 @@ export default function Dashboard() {
     fetch("http://127.0.0.1:8000/signal")
       .then((res) => res.json())
       .then((data) => setSignals(data))
-      .catch((err) => console.log("ERROR:", err));
+      .catch((err) => console.error("ERROR:", err));
   }, []);
 
   return (

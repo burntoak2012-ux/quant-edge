@@ -16,7 +16,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -69,7 +69,7 @@ missing_players_map = {
 }
 
 @app.get("/signal")
-def signal():
+def get_signal():
     players = enrich_players(load_players("app/players_stats_live.json"))
 
     fixtures = [

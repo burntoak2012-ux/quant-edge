@@ -15,7 +15,7 @@ export default function TablePage() {
     fetch("http://127.0.0.1:8000/table")
       .then((res) => res.json())
       .then((data) => setRows(data))
-      .catch((err) => console.log("ERROR:", err));
+      .catch((err) => console.error("ERROR:", err));
   }, []);
 
   return (

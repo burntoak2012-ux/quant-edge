@@ -67,7 +67,7 @@ export default function MatchDetailsPage() {
         setMatchData(found);
       })
       .catch((err) => {
-        console.log("ERROR:", err);
+        console.error("ERROR:", err);
         setMatchData(null);
       })
       .finally(() => {
