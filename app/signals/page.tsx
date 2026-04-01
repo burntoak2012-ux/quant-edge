@@ -80,10 +80,10 @@ const sortedRows = [...filteredRows].sort((a, b) => {
   return a.best_edge - b.best_edge;
 });
 
-const visibleRows = sortedRows;
-const freeRows = visibleRows.slice(0, 3);
-const displayedRows = isProUser ? visibleRows : freeRows;
-const lockedRows = !isProUser ? visibleRows.slice(3, 6) : [];
+const visibleRows: Signal[] = sortedRows;
+const freeRows: Signal[] = visibleRows.slice(0, 3);
+const displayedRows: Signal[] = isProUser ? visibleRows : freeRows;
+const lockedRows: Signal[] = !isProUser ? visibleRows.slice(3, 6) : [];
 
 const totalSignals = displayedRows.length;
 
