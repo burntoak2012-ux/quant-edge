@@ -28,7 +28,7 @@ const isProUser =
   isLoaded &&
   isSignedIn &&
   user?.publicMetadata?.plan === "pro";
-  console.log("isProUser =", isProUser, "metadata =", user?.publicMetadata);
+  
   const [rows, setRows] = useState<Signal[]>([]);
 const [loading, setLoading] = useState(true);
 const [sortBy, setSortBy] = useState("edge-desc");
