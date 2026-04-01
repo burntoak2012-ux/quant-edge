@@ -14,33 +14,33 @@ export async function POST(req: Request) {
       );
     }
 
-    const origin = req.headers.get("origin");
-
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
+      payment_method_types: ["card"],
       line_items: [
         {
-          price: process.env.STRIPE_PRICE_ID!,
+          price: process.env.STRIPE_PRICE_ID,
           quantity: 1,
         },
       ],
-      success_url: `${origin}/signals?success=true`,
-      cancel_url: `${origin}/pricing`,
+      success_url: `${req.headers.get("origin")}/signals?success=true`,
+      cancel_url: `${req.headers.get("origin")}/pricing`,
       metadata: {
         clerkUserId,
       },
     });
 
     return NextResponse.json({ url: session.url });
-  } catch (err: any) {
-    console.error("STRIPE ERROR FULL:", err);
 
+  } catch (err: any) {
+    console.error("🔥 STRIPE ERROR:", err);
     return NextResponse.json(
       { error: err.message || "Stripe failed" },
       { status: 500 }
     );
   }
 }
+
 
 
 
