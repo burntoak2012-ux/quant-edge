@@ -42,6 +42,8 @@ export async function POST(req: Request) {
     await client.users.updateUserMetadata(clerkUserId, {
       publicMetadata: {
         plan: "pro",
+        stripeCustomerId:
+    session.customer,
       },
     });
 
