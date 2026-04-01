@@ -52,17 +52,19 @@ export default function PricingPage() {
                 setLoading(true);
 
                 const res = await fetch("/api/checkout", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                    clerkUserId: user?.id,
-                  }),
-                });
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    clerkUserId: user?.id,
+  }),
+});
 
-                const data = await res.json();
-                console.log("Checkout response:", data);
+console.log("Status:", res.status);
+
+const data = await res.json();
+console.log("Checkout response:", data);
 
                 if (data.url) {
                   window.location.href = data.url;

@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-06-20",
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST(req: Request) {
   try {
@@ -16,6 +14,8 @@ export async function POST(req: Request) {
       );
     }
 
+    const origin = req.headers.get("origin");
+
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items: [
@@ -24,8 +24,8 @@ export async function POST(req: Request) {
           quantity: 1,
         },
       ],
-      success_url: `${req.headers.get("origin")}/signals?success=true`,
-      cancel_url: `${req.headers.get("origin")}/pricing`,
+      success_url: `${origin}/signals?success=true`,
+      cancel_url: `${origin}/pricing`,
       metadata: {
         clerkUserId,
       },
@@ -41,6 +41,7 @@ export async function POST(req: Request) {
     );
   }
 }
+
 
 
 
