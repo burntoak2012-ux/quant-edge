@@ -21,36 +21,37 @@ export default function Home() {
       </p>
 
       <div className="mt-6">
-        {/* NOT SIGNED IN */}
-        {!isSignedIn && (
-          <button
-            onClick={() => (window.location.href = "/sign-in")}
-            className="bg-black text-white px-6 py-3 rounded-lg"
-          >
-            Get Started
-          </button>
-        )}
+  {/* NOT SIGNED IN */}
+  {!isSignedIn && (
+    <button
+      onClick={() => (window.location.href = "/sign-in")}
+      className="bg-black text-white px-6 py-3 rounded-lg"
+    >
+      Get Started
+    </button>
+  )}
 
-        {/* SIGNED IN BUT NOT PRO */}
-        {isSignedIn && !isProUser && (
-          <button
-            onClick={() => (window.location.href = "/pricing")}
-            className="bg-black text-white px-6 py-3 rounded-lg"
-          >
-            Upgrade to Pro
-          </button>
-        )}
+  {/* SIGNED IN BUT NOT PRO */}
+  {isSignedIn && !isProUser && (
+    <button
+      onClick={() => (window.location.href = "/pricing")}
+      className="bg-black text-white px-6 py-3 rounded-lg"
+    >
+      Upgrade to Pro
+    </button>
+  )}
 
-        {/* PRO USER */}
-        {isSignedIn && isProUser && (
-          <button
-            onClick={() => (window.location.href = "/signals")}
-            className="bg-black text-white px-6 py-3 rounded-lg"
-          >
-            View Signals
-          </button>
-        )}
-      </div>
+  {/* PRO USER */}
+  {isSignedIn && isProUser && (
+    <button
+      onClick={() => (window.location.href = "/signals")}
+      className="bg-black text-white px-6 py-3 rounded-lg"
+    >
+      View Signals
+    </button>
+  )}
+</div>
+
     </main>
   );
 }
