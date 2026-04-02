@@ -1,35 +1,36 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
+import { useUser, UserButton, SignInButton } from "@clerk/nextjs";
 
 export default function Navbar() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { user, isLoaded, isSignedIn } = useUser();
+
+  const isProUser =
+    isLoaded &&
+    isSignedIn &&
+    user?.publicMetadata?.plan === "pro";
 
   return (
-    <div className="w-full border-b bg-white px-6 py-4 flex justify-between items-center">
-      
-      {/* Left */}
-      <Link href="/signals" className="font-bold text-xl">
-        ⚡ Quant Edge
+    <nav className="flex items-center justify-between px-6 py-4 border-b">
+      <Link href="/" className="font-semibold text-lg">
+        Quant Edge
       </Link>
 
-      {/* Right */}
       <div className="flex items-center gap-4">
-        
-        {isLoggedIn && (
-          <span className="text-sm px-3 py-1 bg-green-100 text-green-700 rounded-full">
-            Pro
-          </span>
+        <Link href="/pricing" className="text-sm">
+          Pricing
+        </Link>
+
+        {isProUser && (
+          <Link href="/signals" className="text-sm font-medium">
+            Live Signals
+          </Link>
         )}
 
-        <button
-          onClick={() => setIsLoggedIn(!isLoggedIn)}
-          className="px-4 py-2 rounded-lg border hover:bg-gray-100"
-        >
-          {isLoggedIn ? "Logout" : "Sign In"}
-        </button>
+        {isSignedIn ? <UserButton /> : <SignInButton />}
       </div>
-    </div>
+    </nav>
   );
 }
+
