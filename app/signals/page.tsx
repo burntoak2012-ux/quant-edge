@@ -39,13 +39,29 @@ export default function SignalsPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto py-10 px-6">
-      <h1 className="text-3xl font-bold mb-6">Live Signals</h1>
+  <div className="max-w-3xl mx-auto py-10 px-6">
+    <h1 className="text-3xl font-bold mb-6">Live Signals</h1>
 
-      <div className="border rounded-xl p-6">
-        <p>Your pro signals will appear here.</p>
+    <div className="space-y-4">
+      <div className="border rounded-xl p-4">
+        <p className="font-semibold">⚽ Arsenal vs Chelsea</p>
+        <p>Prediction: Over 2.5 Goals</p>
+        <p className="text-sm text-gray-500">Confidence: 78%</p>
+      </div>
+
+      <div className="border rounded-xl p-4">
+        <p className="font-semibold">⚽ Barcelona vs Valencia</p>
+        <p>Prediction: Barcelona Win</p>
+        <p className="text-sm text-gray-500">Confidence: 82%</p>
+      </div>
+
+      <div className="border rounded-xl p-4">
+        <p className="font-semibold">⚽ Inter vs Milan</p>
+        <p>Prediction: Both Teams to Score</p>
+        <p className="text-sm text-gray-500">Confidence: 74%</p>
       </div>
     </div>
-  );
+  </div>
+);
 }
 
