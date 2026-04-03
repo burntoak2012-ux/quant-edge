@@ -1,7 +1,7 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-
+import { signals } from "@/lib/signals";
 
 export default function SignalsPage() {
   const { user, isLoaded, isSignedIn } = useUser();
@@ -35,23 +35,15 @@ export default function SignalsPage() {
     <h1 className="text-3xl font-bold mb-6">Live Signals</h1>
 
     <div className="space-y-4">
-      <div className="border rounded-xl p-4">
-        <p className="font-semibold">⚽ Arsenal vs Chelsea</p>
-        <p>Prediction: Over 2.5 Goals</p>
-        <p className="text-sm text-gray-500">Confidence: 78%</p>
-      </div>
-
-      <div className="border rounded-xl p-4">
-        <p className="font-semibold">⚽ Barcelona vs Valencia</p>
-        <p>Prediction: Barcelona Win</p>
-        <p className="text-sm text-gray-500">Confidence: 82%</p>
-      </div>
-
-      <div className="border rounded-xl p-4">
-        <p className="font-semibold">⚽ Inter vs Milan</p>
-        <p>Prediction: Both Teams to Score</p>
-        <p className="text-sm text-gray-500">Confidence: 74%</p>
-      </div>
+      {signals.map((signal) => (
+        <div key={signal.id} className="border rounded-xl p-4">
+          <p className="font-semibold">{signal.match}</p>
+          <p>Prediction: {signal.prediction}</p>
+          <p className="text-sm text-gray-500">
+            Confidence: {signal.confidence}%
+          </p>
+        </div>
+      ))}
     </div>
   </div>
 );
