@@ -6,20 +6,12 @@ import { redirect } from "next/navigation";
 export default function SignalsPage() {
   const { user, isLoaded, isSignedIn } = useUser();
 
-  if (!isLoaded) {
-    return <div className="p-6">Loading...</div>;
-  }
+  
 
-  if (!isSignedIn) {
-    return (
-      <div className="max-w-3xl mx-auto py-20 px-6 text-center">
-        <h1 className="text-3xl font-bold mb-4">Live Signals</h1>
-        <p className="mb-6">Please sign in to access signals.</p>
-      </div>
-    );
-  }
-
-  const isProUser = user?.publicMetadata?.plan === "pro";
+  const isProUser =
+  isLoaded &&
+  isSignedIn &&
+  user?.publicMetadata?.plan === "pro";
 
   if (!isProUser) {
     return (
