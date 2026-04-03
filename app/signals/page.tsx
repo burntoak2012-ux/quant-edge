@@ -1,95 +1,91 @@
-"use client";
-
-import { useUser } from "@clerk/nextjs";
-import { signals } from "@/lib/signals";
+import Link from "next/link"
 
 export default function SignalsPage() {
-  const { user, isLoaded, isSignedIn } = useUser();
-
-  if (!isLoaded) {
-    return <div className="p-6">Loading...</div>;
-  }
-
-  if (!isSignedIn) {
-    return (
-      <div className="max-w-3xl mx-auto py-20 px-6 text-center">
-        <h1 className="text-2xl font-bold mb-4">Please sign in</h1>
-        <p>You must be signed in to view signals.</p>
-      </div>
-    );
-  }
-
-  const isProUser =
-    isLoaded &&
-    isSignedIn &&
-    user?.publicMetadata?.plan === "pro";
-
-  if (!isProUser) {
-    return (
-      <div className="max-w-3xl mx-auto py-20 px-6 text-center">
-        <h1 className="text-3xl font-bold mb-4">Upgrade to view all signals</h1>
-        <p className="mb-6">Pro members get access to the full live signals list.</p>
-        <a
-          href="/pricing"
-          className="inline-block rounded-xl bg-black px-6 py-3 text-white"
-        >
-          View Pricing
-        </a>
-      </div>
-    );
-  }
+  
+  const signals = [
+    {
+      id: 1,
+      match: "Arsenal vs Chelsea",
+      league: "Premier League",
+      kickoff: "19:45",
+      prediction: "Over 2.5 Goals",
+      confidence: 78,
+    },
+    {
+      id: 2,
+      match: "Barcelona vs Valencia",
+      league: "La Liga",
+      kickoff: "20:00",
+      prediction: "Barcelona Win",
+      confidence: 82,
+    },
+    {
+      id: 3,
+      match: "Inter vs Milan",
+      league: "Serie A",
+      kickoff: "19:30",
+      prediction: "Both Teams to Score",
+      confidence: 74,
+    },
+  ];
 
   return (
-  <div className="max-w-5xl mx-auto py-10 px-6">
-    <div className="hidden text-green-600 text-yellow-600 text-red-600"></div>
-    <div className="mb-8">
-      <h1 className="text-4xl font-bold">Live Signals</h1>
-      <p className="text-gray-500 mt-2">
-        Today’s AI-powered football betting picks
-      </p>
-    </div>
+    <div className="max-w-5xl mx-auto py-10 px-6">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold">Live Signals</h1>
+        <p className="text-gray-500 mt-2">
+          Today’s AI-powered football betting picks
+        </p>
+      </div>
 
-    <div className="grid gap-4">
-      {signals.map((signal) => (
-        <div
-          key={signal.id}
-          className="border rounded-2xl p-5 shadow-sm bg-white"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-lg font-semibold">{signal.match}</h2>
-            <span className="text-sm text-gray-500">{signal.kickoff}</span>
-          </div>
+      {/* Signals */}
+      <div className="grid gap-6">
+        {signals.map((signal) => (
+  <Link key={signal.id} href={`/signals/${signal.id}`}>
+    <div
+            
+            className="border rounded-2xl p-5 shadow-sm bg-white hover:shadow-md transition cursor-pointer"
+          >
+            {/* Top row */}
+            <div className="flex justify-between items-start">
+              {/* LEFT */}
+              <div>
+                <h2 className="text-lg font-semibold">{signal.match}</h2>
+                <p className="text-sm text-gray-500">{signal.league}</p>
+              </div>
 
-          <p className="text-sm text-gray-500 mb-3">{signal.league}</p>
+              {/* RIGHT */}
+              <div className="text-right space-y-1">
+                <p className="text-xs text-gray-400">{signal.kickoff}</p>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Prediction</p>
-              <p className="font-medium">{signal.prediction}</p>
+                <p className="text-xs text-gray-400">Confidence</p>
+
+                <span
+                  className={`px-3 py-1 rounded-full text-sm font-bold shadow-sm ${
+                    signal.confidence >= 80
+                      ? "bg-green-100 text-green-700"
+                      : signal.confidence >= 70
+                      ? "bg-yellow-100 text-yellow-700"
+                      : "bg-red-100 text-red-700"
+                  }`}
+                >
+                  {signal.confidence}%
+                </span>
+              </div>
             </div>
 
-            <div className="text-right">
-              <p className="text-sm 
-            text-gray-500">Confidence</p>
-
-              <p
-                className={`font-semibold ${
-                  signal.confidence >= 80
-                    ? "text-green-600"
-                    : signal.confidence >= 70
-                    ? "text-yellow-600"
-                    : "text-red-600"
-                }`}
-              >
-                {signal.confidence}%
-              </p>
-            </div>
+            {/* Prediction */}
+            <p className="text-sm mt-3">
+              Prediction:{" "}
+              <span className="font-medium">{signal.prediction}</span>
+            </p>
           </div>
-        </div>
-      ))}
+          </Link>
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
 }
 
 
