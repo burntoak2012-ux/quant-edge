@@ -40,22 +40,43 @@ export default function SignalsPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto py-10 px-6">
-      <h1 className="text-3xl font-bold mb-6">Live Signals</h1>
-
-      <div className="space-y-4">
-        {signals.map((signal) => (
-          <div key={signal.id} className="border rounded-xl p-4">
-            <p className="font-semibold">{signal.match}</p>
-            <p>Prediction: {signal.prediction}</p>
-            <p className="text-sm text-gray-500">
-              Confidence: {signal.confidence}%
-            </p>
-          </div>
-        ))}
-      </div>
+  <div className="max-w-5xl mx-auto py-10 px-6">
+    <div className="mb-8">
+      <h1 className="text-4xl font-bold">Live Signals</h1>
+      <p className="text-gray-500 mt-2">
+        Today’s AI-powered football betting picks
+      </p>
     </div>
-  );
+
+    <div className="grid gap-4">
+      {signals.map((signal) => (
+        <div
+          key={signal.id}
+          className="border rounded-2xl p-5 shadow-sm bg-white"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-lg font-semibold">{signal.match}</h2>
+            <span className="text-sm text-gray-500">{signal.kickoff}</span>
+          </div>
+
+          <p className="text-sm text-gray-500 mb-3">{signal.league}</p>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Prediction</p>
+              <p className="font-medium">{signal.prediction}</p>
+            </div>
+
+            <div className="text-right">
+              <p className="text-sm text-gray-500">Confidence</p>
+              <p className="font-semibold">{signal.confidence}%</p>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
 }
 
 
