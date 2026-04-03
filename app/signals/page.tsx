@@ -41,6 +41,7 @@ export default function SignalsPage() {
 
   return (
   <div className="max-w-5xl mx-auto py-10 px-6">
+    <div className="hidden text-green-600 text-yellow-600 text-red-600"></div>
     <div className="mb-8">
       <h1 className="text-4xl font-bold">Live Signals</h1>
       <p className="text-gray-500 mt-2">
@@ -68,8 +69,20 @@ export default function SignalsPage() {
             </div>
 
             <div className="text-right">
-              <p className="text-sm text-gray-500">Confidence</p>
-              <p className="font-semibold">{signal.confidence}%</p>
+              <p className="text-sm 
+            text-gray-500">Confidence</p>
+
+              <p
+                className={`font-semibold ${
+                  signal.confidence >= 80
+                    ? "text-green-600"
+                    : signal.confidence >= 70
+                    ? "text-yellow-600"
+                    : "text-red-600"
+                }`}
+              >
+                {signal.confidence}%
+              </p>
             </div>
           </div>
         </div>
