@@ -1,16 +1,19 @@
 import { signals } from "@/lib/signals";
 
-export default function SignalDetailPage({
+export default async function SignalDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const signal = signals.find((s) => s.id === Number(params.id));
+  const { id } = await params;
+
+  const signal = signals.find((s) => s.id === Number(id));
 
   if (!signal) {
     return (
       <div className="max-w-3xl mx-auto py-10 px-6">
         <h1 className="text-3xl font-bold">Signal not found</h1>
+        <p className="text-gray-500 mt-2">Requested ID: {id}</p>
       </div>
     );
   }
