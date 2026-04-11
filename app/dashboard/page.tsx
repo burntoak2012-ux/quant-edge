@@ -72,6 +72,8 @@ function StatCard({
 export default async function DashboardPage() {
   const { userId } = await auth()
 
+  console.log("USER ID:", userId)
+
   if (!userId) {
     return (
       <div className="min-h-screen bg-white">
@@ -210,7 +212,7 @@ export default async function DashboardPage() {
           <h1 className="mt-4 text-5xl font-bold tracking-tight text-zinc-950">
             Model Overview
           </h1>
-          
+
           <div className="mt-4">
   <ManageBillingButton />
 </div>
