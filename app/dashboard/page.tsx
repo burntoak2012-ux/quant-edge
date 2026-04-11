@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server"
 import fs from "fs"
 import path from "path"
 import Link from "next/link"
+import { UserButton } from "@clerk/nextjs"
 import ManageBillingButton from "../components/manage-billing-button"
 
 type Signal = {
@@ -18,35 +19,67 @@ type Signal = {
   gap_label?: string
   market_gap?: number
   value?: number
-  matchup_bias?: string
-  strength_label?: string
+  strength_score?: number
+  home_attack?: number
+  home_defense?: number
+  away_attack?: number
+  away_defense?: number
+  lineup_adjusted?: boolean
 }
 
-function readJsonFile<T>(filePath: string, fallback: T): T {
+function getPaidUsersPath() {
+  return path.join(process.cwd(), "python-engine", "data", "paid_users.json")
+}
+
+function getSignalsPath() {
+  return path.join(process.cwd(), "python-engine", "output", "signals.json")
+}
+
+function getPaidUsers(): string[] {
   try {
-    const raw = fs.readFileSync(filePath, "utf-8")
-    return JSON.parse(raw) as T
+    const filePath = getPaidUsersPath()
+
+    if (!fs.existsSync(filePath)) {
+      return []
+    }
+
+    return JSON.parse(fs.readFileSync(filePath, "utf-8"))
   } catch {
-    return fallback
+    return []
   }
 }
 
-function formatPrediction(signal: Signal) {
-  if (signal.prediction_display) return signal.prediction_display
+function getSignals(): Signal[] {
+  try {
+    const filePath = getSignalsPath()
 
-  const map: Record<string, string> = {
-    home_win: "Home Win",
-    away_win: "Away Win",
-    over_2_5: "Over 2.5 Goals",
-    btts_yes: "Both Teams To Score",
+    if (!fs.existsSync(filePath)) {
+      return []
+    }
+
+    return JSON.parse(fs.readFileSync(filePath, "utf-8"))
+  } catch {
+    return []
   }
-
-  return map[signal.prediction] || signal.prediction.replaceAll("_", " ")
 }
 
-function average(nums: number[]) {
-  if (nums.length === 0) return 0
-  return nums.reduce((a, b) => a + b, 0) / nums.length
+function formatPrediction(prediction?: string) {
+  if (!prediction) return "N/A"
+
+  return prediction
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+function formatValue(value?: number) {
+  if (typeof value !== "number") return "N/A"
+  return value > 0 ? `+${value.toFixed(2)}` : value.toFixed(2)
+}
+
+function formatMarketGap(value?: number) {
+  if (typeof value !== "number") return "N/A"
+  const pct = value * 100
+  return pct > 0 ? `+${pct.toFixed(0)}%` : `${pct.toFixed(0)}%`
 }
 
 function StatCard({
@@ -56,23 +89,21 @@ function StatCard({
 }: {
   label: string
   value: string
-  subtext?: string
+  subtext: string
 }) {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+    <div className="rounded-[28px] border border-zinc-200 bg-white p-5 shadow-sm">
       <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
         {label}
       </p>
       <p className="mt-3 text-3xl font-bold tracking-tight text-zinc-950">{value}</p>
-      {subtext && <p className="mt-2 text-sm text-zinc-500">{subtext}</p>}
+      <p className="mt-2 text-sm text-zinc-500">{subtext}</p>
     </div>
   )
 }
 
 export default async function DashboardPage() {
   const { userId } = await auth()
-
-  console.log("USER ID:", userId)
 
   if (!userId) {
     return (
@@ -95,94 +126,36 @@ export default async function DashboardPage() {
     )
   }
 
-  const signalsPath = path.join(process.cwd(), "python-engine", "output", "signals.json")
-  const paidUsersPath = path.join(process.cwd(), "python-engine", "data", "paid_users.json")
-
-  const signals = readJsonFile<Signal[]>(signalsPath, [])
-  const paidUsers = readJsonFile<string[]>(paidUsersPath, [])
-
+  const paidUsers = getPaidUsers()
   const isPaidUser = paidUsers.includes(userId)
-
-  if (!isPaidUser) {
-    return (
-      <div className="min-h-screen bg-zinc-50">
-        <div className="border-b border-zinc-200 bg-white">
-          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-black text-sm font-bold text-white">
-                Q
-              </div>
-              <span className="text-lg font-semibold text-zinc-900">QuantEdge</span>
-            </Link>
-
-            <div className="flex items-center gap-6 text-sm">
-              <Link href="/signals" className="text-zinc-600 hover:text-zinc-900">
-                Signals
-              </Link>
-              <Link
-                href="/pricing"
-                className="rounded-full bg-black px-4 py-2 font-medium text-white"
-              >
-                Upgrade
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        <main className="mx-auto max-w-6xl px-6 py-10">
-          <div className="rounded-[32px] border border-zinc-200 bg-white p-8 shadow-sm">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-400">
-              Dashboard
-            </p>
-            <h1 className="mt-4 text-4xl font-bold tracking-tight text-zinc-950">
-              Premium Dashboard
-            </h1>
-            <p className="mt-4 max-w-2xl text-lg leading-8 text-zinc-600">
-              Unlock premium performance stats, signal overview, and model summaries.
-            </p>
-
-            <Link
-              href="/pricing"
-              className="mt-6 inline-flex rounded-2xl bg-black px-5 py-3 font-semibold text-white"
-            >
-              Upgrade to Pro
-            </Link>
-          </div>
-        </main>
-      </div>
-    )
-  }
+  const signals = getSignals()
 
   const totalSignals = signals.length
-  const avgConfidence = average(signals.map((s) => s.confidence))
-  const avgValue = average(signals.map((s) => s.value ?? 0))
-  const topConfidence = totalSignals > 0 ? Math.max(...signals.map((s) => s.confidence)) : 0
-  const highConfidenceSignals = signals.filter((s) => s.confidence >= 65).length
-  const bigGapSignals = signals.filter((s) => (s.market_gap ?? 0) >= 0.1).length
+  const avgConfidence =
+    totalSignals > 0
+      ? Math.round(
+          signals.reduce((sum, signal) => sum + (signal.confidence || 0), 0) /
+            totalSignals
+        )
+      : 0
 
-  const leagueCounts = signals.reduce<Record<string, number>>((acc, signal) => {
-    acc[signal.league] = (acc[signal.league] || 0) + 1
-    return acc
-  }, {})
+  const avgValue =
+    totalSignals > 0
+      ? signals.reduce((sum, signal) => sum + (signal.value || 0), 0) / totalSignals
+      : 0
 
-  const predictionCounts = signals.reduce<Record<string, number>>((acc, signal) => {
-    const key = formatPrediction(signal)
-    acc[key] = (acc[key] || 0) + 1
-    return acc
-  }, {})
+  const topConfidence =
+    totalSignals > 0 ? Math.max(...signals.map((signal) => signal.confidence || 0)) : 0
 
-  const strongestSignals = [...signals]
-    .sort((a, b) => {
-      const aScore = (a.confidence || 0) + ((a.value || 0) * 100)
-      const bScore = (b.confidence || 0) + ((b.value || 0) * 100)
-      return bScore - aScore
-    })
-    .slice(0, 3)
+  const topSignal =
+    totalSignals > 0
+      ? [...signals].sort((a, b) => (b.confidence || 0) - (a.confidence || 0))[0]
+      : null
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <div className="border-b border-zinc-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+    <div className="min-h-screen bg-white text-zinc-950">
+      <header className="border-b border-zinc-200 bg-white">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
           <Link href="/" className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-black text-sm font-bold text-white">
               Q
@@ -194,194 +167,320 @@ export default async function DashboardPage() {
             <Link href="/signals" className="text-zinc-600 hover:text-zinc-900">
               Signals
             </Link>
+
             <Link
               href="/dashboard"
               className="rounded-full bg-black px-4 py-2 font-medium text-white"
             >
               Dashboard
             </Link>
+
+            <UserButton />
           </div>
         </div>
-      </div>
+      </header>
 
       <main className="mx-auto max-w-6xl px-6 py-10">
         <section className="rounded-[32px] border border-zinc-200 bg-white p-8 shadow-sm">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-400">
-            Premium Dashboard
-          </p>
-          <h1 className="mt-4 text-5xl font-bold tracking-tight text-zinc-950">
-  Model Overview
-</h1>
+          <div className="grid gap-8 lg:grid-cols-[1.45fr_0.9fr]">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-400">
+                Premium Dashboard
+              </p>
 
-<div className="mt-4">
-  <ManageBillingButton />
-</div>
-          <p className="mt-4 max-w-3xl text-lg leading-8 text-zinc-600">
-            A quick view of today’s board quality, signal concentration, and edge profile.
-          </p>
+              <h1 className="mt-4 text-5xl font-bold tracking-tight text-zinc-950">
+                Model Overview
+              </h1>
 
-          <div className="mt-6 flex flex-wrap gap-3">
-            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700">
-              Pro active
-            </span>
-            <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-sm font-medium text-zinc-700">
-              {totalSignals} signals loaded
-            </span>
-          </div>
-          <div className="mt-6">
-  
-</div>
-        </section>
+              <p className="mt-4 max-w-3xl text-lg leading-8 text-zinc-600">
+                A quick view of today’s board quality, signal concentration, and
+                edge profile.
+              </p>
 
-        <section className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <StatCard
-            label="Total Signals"
-            value={String(totalSignals)}
-            subtext="Current board size"
-          />
-          <StatCard
-            label="Avg Confidence"
-            value={`${avgConfidence.toFixed(0)}%`}
-            subtext="Average across loaded signals"
-          />
-          <StatCard
-            label="Avg Value"
-            value={avgValue >= 0 ? `+${avgValue.toFixed(2)}` : avgValue.toFixed(2)}
-            subtext="Model edge estimate"
-          />
-          <StatCard
-            label="Top Confidence"
-            value={topConfidence ? `${topConfidence}%` : "—"}
-            subtext="Strongest signal on board"
-          />
-        </section>
+              <div className="mt-6 flex flex-wrap gap-3">
+                {isPaidUser ? (
+                  <>
+                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700">
+                      Pro active
+                    </span>
+                    <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-sm font-medium text-zinc-700">
+                      {totalSignals} signals loaded
+                    </span>
+                  </>
+                ) : (
+                  <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-700">
+                    Free access
+                  </span>
+                )}
+              </div>
 
-        <section className="mt-4 grid gap-4 md:grid-cols-3">
-          <StatCard
-            label="High Confidence"
-            value={String(highConfidenceSignals)}
-            subtext="Signals at 65%+ confidence"
-          />
-          <StatCard
-            label="Big Gaps"
-            value={String(bigGapSignals)}
-            subtext="Signals with market gap of 10%+"
-          />
-          <StatCard
-            label="Pro Status"
-            value="Active"
-            subtext="Premium access is enabled"
-          />
-        </section>
-
-        <section className="mt-10 grid gap-6 lg:grid-cols-2">
-          <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
-            <h2 className="text-2xl font-bold tracking-tight text-zinc-950">
-              League Distribution
-            </h2>
-
-            <div className="mt-6 space-y-4">
-              {Object.keys(leagueCounts).length === 0 ? (
-                <p className="text-sm text-zinc-500">No signals available.</p>
-              ) : (
-                Object.entries(leagueCounts).map(([league, count]) => (
-                  <div key={league}>
-                    <div className="mb-2 flex items-center justify-between text-sm">
-                      <span className="font-medium text-zinc-700">{league}</span>
-                      <span className="text-zinc-500">{count}</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-zinc-100">
-                      <div
-                        className="h-2 rounded-full bg-black"
-                        style={{
-                          width: `${(count / totalSignals) * 100}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))
-              )}
+              <div className="mt-6">
+                {isPaidUser ? (
+                  <ManageBillingButton />
+                ) : (
+                  <Link
+                    href="/pricing"
+                    className="inline-flex rounded-full bg-black px-5 py-3 text-sm font-semibold text-white"
+                  >
+                    Upgrade to Pro
+                  </Link>
+                )}
+              </div>
             </div>
-          </div>
 
-          <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
-            <h2 className="text-2xl font-bold tracking-tight text-zinc-950">
-              Market Mix
-            </h2>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-3xl border border-zinc-200 p-5">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
+                  Total Signals
+                </p>
+                <p className="mt-3 text-3xl font-bold tracking-tight text-zinc-950">
+                  {totalSignals}
+                </p>
+                <p className="mt-1 text-sm text-zinc-500">Current board size</p>
+              </div>
 
-            <div className="mt-6 space-y-4">
-              {Object.keys(predictionCounts).length === 0 ? (
-                <p className="text-sm text-zinc-500">No signals available.</p>
-              ) : (
-                Object.entries(predictionCounts).map(([prediction, count]) => (
-                  <div key={prediction}>
-                    <div className="mb-2 flex items-center justify-between text-sm">
-                      <span className="font-medium text-zinc-700">{prediction}</span>
-                      <span className="text-zinc-500">{count}</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-zinc-100">
-                      <div
-                        className="h-2 rounded-full bg-black"
-                        style={{
-                          width: `${(count / totalSignals) * 100}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))
-              )}
+              <div className="rounded-3xl border border-zinc-200 p-5">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
+                  Avg Confidence
+                </p>
+                <p className="mt-3 text-3xl font-bold tracking-tight text-zinc-950">
+                  {avgConfidence}%
+                </p>
+                <p className="mt-1 text-sm text-zinc-500">Average across loaded signals</p>
+              </div>
+
+              <div className="rounded-3xl border border-zinc-200 p-5">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
+                  Avg Value
+                </p>
+                <p className="mt-3 text-3xl font-bold tracking-tight text-zinc-950">
+                  {avgValue > 0 ? `+${avgValue.toFixed(2)}` : avgValue.toFixed(2)}
+                </p>
+                <p className="mt-1 text-sm text-zinc-500">Model edge estimate</p>
+              </div>
+
+              <div className="rounded-3xl border border-zinc-200 p-5">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
+                  Top Confidence
+                </p>
+                <p className="mt-3 text-3xl font-bold tracking-tight text-zinc-950">
+                  {topConfidence}%
+                </p>
+                <p className="mt-1 text-sm text-zinc-500">Strongest signal on board</p>
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="mt-10 rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
-          <h2 className="text-2xl font-bold tracking-tight text-zinc-950">
-            Strongest Signals
-          </h2>
+        {isPaidUser ? (
+          <>
+            {topSignal ? (
+              <section className="mt-8 rounded-[32px] border border-zinc-200 bg-white p-8 shadow-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-zinc-600">
+                    Top Signal
+                  </span>
+                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                    {topSignal.confidence}% Confidence
+                  </span>
+                  {topSignal.grade ? (
+                    <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-cyan-700">
+                      Grade {topSignal.grade}
+                    </span>
+                  ) : null}
+                </div>
 
-          <div className="mt-6 grid gap-4 lg:grid-cols-3">
-            {strongestSignals.length === 0 ? (
-              <p className="text-sm text-zinc-500">No signals available.</p>
-            ) : (
-              strongestSignals.map((signal) => (
-                <div
-                  key={signal.id}
-                  className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5"
-                >
-                  <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-                    {signal.league}
-                  </p>
-                  <h3 className="mt-2 text-lg font-bold text-zinc-950">{signal.match}</h3>
-                  <p className="mt-2 text-sm font-medium text-zinc-700">
-                    {formatPrediction(signal)}
-                  </p>
+                <div className="mt-5 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+                  <div>
+                    <h2 className="text-3xl font-bold tracking-tight text-zinc-950">
+                      {topSignal.match}
+                    </h2>
+                    <p className="mt-2 text-zinc-500">{topSignal.league}</p>
 
-                  <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <p className="text-zinc-400">Confidence</p>
-                      <p className="font-semibold text-zinc-900">{signal.confidence}%</p>
+                    <div className="mt-6">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
+                        Pick
+                      </p>
+                      <p className="mt-2 text-2xl font-semibold text-zinc-900">
+                        {topSignal.prediction_display ||
+                          formatPrediction(topSignal.prediction)}
+                      </p>
                     </div>
-                    <div>
-                      <p className="text-zinc-400">Value</p>
-                      <p className="font-semibold text-zinc-900">
-                        {typeof signal.value === "number"
-                          ? `${signal.value > 0 ? "+" : ""}${signal.value.toFixed(2)}`
-                          : "—"}
+
+                    <div className="mt-6">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
+                        Model Reasoning
+                      </p>
+                      <p className="mt-2 text-zinc-600">
+                        {topSignal.reasoning || "No model reasoning available."}
                       </p>
                     </div>
                   </div>
 
-                  {signal.reasoning && (
-                    <p className="mt-4 text-sm leading-7 text-zinc-600">
-                      {signal.reasoning}
-                    </p>
-                  )}
+                  <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-2">
+                    <StatCard
+                      label="Value"
+                      value={formatValue(topSignal.value)}
+                      subtext={topSignal.value_reason || "Lineup edge"}
+                    />
+                    <StatCard
+                      label="Market Gap"
+                      value={formatMarketGap(topSignal.market_gap)}
+                      subtext={topSignal.gap_label || "Gap estimate"}
+                    />
+                    <StatCard
+                      label="Strength"
+                      value={
+                        typeof topSignal.strength_score === "number"
+                          ? String(topSignal.strength_score)
+                          : "N/A"
+                      }
+                      subtext="Composite model score"
+                    />
+                    <StatCard
+                      label="Lineup"
+                      value={topSignal.lineup_adjusted ? "Adjusted" : "Base"}
+                      subtext="Model input state"
+                    />
+                  </div>
                 </div>
-              ))
-            )}
-          </div>
-        </section>
+              </section>
+            ) : null}
+
+            <section className="mt-8">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-400">
+                    Latest Signals
+                  </p>
+                  <h2 className="mt-2 text-2xl font-bold tracking-tight text-zinc-950">
+                    Board Snapshot
+                  </h2>
+                </div>
+
+                <Link
+                  href="/signals"
+                  className="rounded-full border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+                >
+                  View all signals
+                </Link>
+              </div>
+
+              <div className="grid gap-4">
+                {signals.slice(0, 3).map((signal) => (
+                  <div
+                    key={signal.id}
+                    className="rounded-[28px] border border-zinc-200 bg-white p-6 shadow-sm"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-zinc-600">
+                        {signal.league}
+                      </span>
+                      <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-zinc-600">
+                        {signal.confidence}% Confidence
+                      </span>
+                      {signal.grade ? (
+                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                          Grade {signal.grade}
+                        </span>
+                      ) : null}
+                    </div>
+
+                    <div className="mt-4 grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
+                      <div>
+                        <h3 className="text-2xl font-semibold text-zinc-950">
+                          {signal.match}
+                        </h3>
+                        <p className="mt-3 text-zinc-700">
+                          Pick:{" "}
+                          <span className="font-semibold">
+                            {signal.prediction_display ||
+                              formatPrediction(signal.prediction)}
+                          </span>
+                        </p>
+                        <p className="mt-2 text-sm text-zinc-500">
+                          {signal.reasoning || "No model reasoning available."}
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="rounded-3xl border border-zinc-200 p-4">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
+                            Value
+                          </p>
+                          <p className="mt-2 text-2xl font-bold text-zinc-950">
+                            {formatValue(signal.value)}
+                          </p>
+                        </div>
+
+                        <div className="rounded-3xl border border-zinc-200 p-4">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
+                            Gap
+                          </p>
+                          <p className="mt-2 text-2xl font-bold text-zinc-950">
+                            {formatMarketGap(signal.market_gap)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </>
+        ) : (
+          <section className="mt-8 rounded-[32px] border border-zinc-200 bg-white p-8 shadow-sm">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-400">
+              Premium Access
+            </p>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight text-zinc-950">
+              Upgrade to unlock full model insights
+            </h2>
+            <p className="mt-4 max-w-2xl text-zinc-600">
+              Get access to premium signals, confidence scoring, value ratings,
+              market-gap analysis, and billing management.
+            </p>
+
+            <div className="mt-6">
+              <Link
+                href="/pricing"
+                className="inline-flex rounded-full bg-black px-5 py-3 text-sm font-semibold text-white"
+              >
+                Upgrade to Pro
+              </Link>
+            </div>
+          </section>
+        )}
       </main>
+
+      <footer className="border-t border-zinc-200 bg-white">
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-6 text-sm text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-black text-xs font-bold text-white">
+              Q
+            </div>
+            <span className="font-medium text-zinc-700">QuantEdge</span>
+          </div>
+
+          <div className="flex flex-wrap gap-4">
+            <Link href="/signals" className="hover:text-zinc-900">
+              Signals
+            </Link>
+            <Link href="/pricing" className="hover:text-zinc-900">
+              Pricing
+            </Link>
+            <Link href="/terms" className="hover:text-zinc-900">
+              Terms
+            </Link>
+            <Link href="/privacy" className="hover:text-zinc-900">
+              Privacy
+            </Link>
+            <Link href="/disclaimer" className="hover:text-zinc-900">
+              Disclaimer
+            </Link>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
