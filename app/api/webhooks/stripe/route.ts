@@ -3,8 +3,8 @@ import Stripe from "stripe"
 import fs from "fs"
 import path from "path"
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2023-10-16",
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
+  apiVersion: "2026-03-25.dahlia",
 })
 
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!
