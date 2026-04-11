@@ -4,7 +4,7 @@ import Stripe from "stripe"
 import { NextResponse } from "next/server"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-  apiVersion: "2025-03-31.dahlia",
+  apiVersion: "2026-03-25.dahlia",
 })
 
 function getPaidUsersPath() {
