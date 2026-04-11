@@ -7,15 +7,16 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
 })
 
 export async function POST(req: Request) {
-  const { userId } = await auth()
-
-  if (!userId) {
-    return new NextResponse("Unauthorized", { status: 401 })
-  }
-
-  const origin = new URL(req.url).origin
-
   try {
+    const { userId } = await auth()
+
+    if (!userId) {
+      return new NextResponse("Unauthorized", { status: 401 })
+    }
+
+    const origin = new URL(req.url).origin
+
+    // 🔍 Find existing customer
     const existingCustomers = await stripe.customers.search({
       query: `metadata['clerkUserId']:'${userId}'`,
       limit: 1,
@@ -26,14 +27,17 @@ export async function POST(req: Request) {
     if (existingCustomers.data.length > 0) {
       customerId = existingCustomers.data[0].id
     } else {
+      // 🆕 Create new Stripe customer
       const customer = await stripe.customers.create({
         metadata: {
           clerkUserId: userId,
         },
       })
+
       customerId = customer.id
     }
 
+    // 💳 Create checkout session
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
@@ -43,11 +47,15 @@ export async function POST(req: Request) {
           quantity: 1,
         },
       ],
-      success_url: `${origin}/signals?success=true`,
-      cancel_url: `${origin}/signals`,
+
+      // ✅ FIXED REDIRECTS
+      success_url: `${origin}/dashboard?success=true`,
+      cancel_url: `${origin}/pricing`,
+
       metadata: {
         clerkUserId: userId,
       },
+
       subscription_data: {
         metadata: {
           clerkUserId: userId,
@@ -56,14 +64,16 @@ export async function POST(req: Request) {
     })
 
     if (!session.url) {
-      return new NextResponse("No checkout URL returned", { status: 500 })
+      return new NextResponse("No checkout URL", { status: 500 })
     }
 
     return NextResponse.json({ url: session.url })
   } catch (err: any) {
-    console.error("Stripe checkout error:", err.message)
+    console.error("Checkout error:", err.message)
+
     return new NextResponse("Error creating checkout session", {
       status: 500,
     })
   }
 }
+
