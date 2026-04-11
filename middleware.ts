@@ -1,20 +1,21 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server"
 
-const isSignalsRoute = createRouteMatcher(["/signals(.*)"]);
-const isPricingRoute = createRouteMatcher(["/pricing(.*)"]);
+const isProtectedRoute = createRouteMatcher([
+  "/signals(.*)",
+  "/dashboard(.*)",
+  "/api/checkout(.*)",
+  "/api/billing(.*)",
+])
 
 export default clerkMiddleware(async (auth, req) => {
-  const { userId, redirectToSignIn } = await auth();
-
-  if (!userId && (isSignalsRoute(req) || isPricingRoute(req))) {
-    return redirectToSignIn();
+  if (isProtectedRoute(req)) {
+    await auth.protect()
   }
-});
+})
 
 export const config = {
-  matcher: ["/((?!.*\\..*|_next).*)", "/", "/(api|trpc)(.*)"],
-};
-
-
-
-
+  matcher: [
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpg|jpeg|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    "/(api|trpc)(.*)",
+  ],
+}
