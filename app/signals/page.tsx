@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server"
 import fs from "fs"
 import path from "path"
 import Link from "next/link"
+import { UserButton } from "@clerk/nextjs"
 
 type Signal = {
   id: number
@@ -242,6 +243,8 @@ export default async function SignalsPage({
               >
                 Dashboard
               </Link>
+
+              <UserButton />
             </div>
           </div>
         </div>
