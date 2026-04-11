@@ -210,10 +210,12 @@ export default async function DashboardPage() {
             Premium Dashboard
           </p>
           <h1 className="mt-4 text-5xl font-bold tracking-tight text-zinc-950">
-            Model Overview
-          </h1>
+  Model Overview
+</h1>
 
-          <div className="mt-4">
+<p className="mt-2 text-sm text-red-500">User ID: {userId}</p>
+
+<div className="mt-4">
   <ManageBillingButton />
 </div>
           <p className="mt-4 max-w-3xl text-lg leading-8 text-zinc-600">
