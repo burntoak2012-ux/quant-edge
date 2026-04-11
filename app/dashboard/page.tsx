@@ -213,8 +213,6 @@ export default async function DashboardPage() {
   Model Overview
 </h1>
 
-<p className="mt-2 text-sm text-red-500">User ID: {userId}</p>
-
 <div className="mt-4">
   <ManageBillingButton />
 </div>
@@ -231,7 +229,7 @@ export default async function DashboardPage() {
             </span>
           </div>
           <div className="mt-6">
-  <ManageBillingButton />
+  
 </div>
         </section>
 
