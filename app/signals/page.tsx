@@ -152,7 +152,7 @@ function SignalCard({ signal }: { signal: Signal }) {
             <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
               Market Gap
             </p>
-            <p className="mt-2 text-xl font-bold text-zinc-900">{gapText(signal.marketGap)}</p>
+            <p className="mt-2 text-xl font-bold text-zinc-900">{gapText(signal.market_gap)}</p>
             {signal.gap_label && <p className="mt-1 text-xs text-zinc-500">{signal.gap_label}</p>}
           </div>
 
