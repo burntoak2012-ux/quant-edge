@@ -1,0 +1,8 @@
+{
+  "Arsenal": { "attack_delta": -6, "defense_delta": 0 },
+  "Chelsea": { "attack_delta": 0, "defense_delta": -2 },
+  "Barcelona": { "attack_delta": 0, "defense_delta": 0 },
+  "Valencia": { "attack_delta": 0, "defense_delta": 0 },
+  "Inter": { "attack_delta": -3, "defense_delta": 0 },
+  "Roma": { "attack_delta": 0, "defense_delta": -1 }
+}

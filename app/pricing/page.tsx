@@ -1,112 +1,59 @@
-"use client";
-
-import { useState } from "react";
-import { useUser } from "@clerk/nextjs";
+"use client"
 
 export default function PricingPage() {
-  const { user, isLoaded, isSignedIn } = useUser();
-  const [loading, setLoading] = useState(false);
+  const handleCheckout = async () => {
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+      })
 
-  const isProUser =
-    isLoaded &&
-    isSignedIn &&
-    user?.publicMetadata?.plan === "pro";
+      if (!res.ok) {
+        console.error("Checkout failed")
+        return
+      }
+
+      const data = await res.json()
+
+      if (data.url) {
+        window.location.href = data.url
+      }
+    } catch (err) {
+      console.error("Error:", err)
+    }
+  }
 
   return (
-    <div className="max-w-4xl mx-auto py-20 px-6">
-      <h1 className="text-3xl font-bold mb-8 text-center">
-        Choose your plan
-      </h1>
+    <div className="min-h-screen flex items-center justify-center bg-black px-6">
+      <div className="max-w-md w-full rounded-2xl border border-zinc-800 bg-zinc-900 p-8 text-center shadow-xl">
+        
+        <h1 className="text-3xl font-bold text-white">
+          Quant Edge Pro
+        </h1>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        <div className="border rounded-xl p-6">
-          <h2 className="text-xl font-semibold mb-2">Free</h2>
-          <p className="text-2xl font-bold mb-4">£0</p>
+        <p className="mt-3 text-zinc-400">
+          Premium betting signals powered by data edge
+        </p>
 
-          <ul className="text-sm space-y-2 mb-6">
-            <li>✔ 1 top value bet per day</li>
-            <li>✔ Limited preview of signals</li>
-            <li>✘ Full signal list</li>
-            <li>✘ Premium insights</li>
-          </ul>
-
-          <button
-            disabled
-            className="w-full rounded-xl bg-gray-300 py-3 text-black"
-          >
-            {isProUser ? "Previous Plan" : "Current Plan"}
-          </button>
+        <div className="mt-6">
+          <span className="text-5xl font-bold text-white">£19</span>
+          <span className="text-zinc-400"> / month</span>
         </div>
 
-        <div className="border rounded-xl p-6">
-          <h2 className="text-xl font-semibold mb-2">Pro</h2>
-          <p className="text-2xl font-bold mb-4">£19/month</p>
+        <ul className="mt-6 space-y-2 text-sm text-zinc-300">
+          <li>✔ Daily high-confidence signals</li>
+          <li>✔ Advanced value detection</li>
+          <li>✔ Market gap insights</li>
+          <li>✔ Lineup-adjusted predictions</li>
+        </ul>
 
-          <ul className="text-sm space-y-2 mb-6">
-            <li>✔ All daily value bets</li>
-            <li>✔ Full signal list</li>
-            <li>✔ Odds comparison</li>
-            <li>✔ Confidence ratings</li>
-          </ul>
+        <button
+          onClick={handleCheckout}
+          className="mt-8 w-full rounded-2xl bg-white px-5 py-3 font-semibold text-black transition hover:bg-zinc-200"
+        >
+          Upgrade to Pro
+        </button>
 
-          {isProUser ? (
-            <button
-              disabled
-              className="w-full rounded-xl bg-gray-300 py-3 text-black"
-            >
-              Current Plan
-            </button>
-          ) : (
-            <button
-              onClick={async () => {
-                if (!isLoaded) return;
-
-                if (!isSignedIn || !user?.id) {
-                  alert("You need to sign in first");
-                  return;
-                }
-
-                try {
-                  setLoading(true);
-
-                  const res = await fetch("/api/checkout", {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                      clerkUserId: user.id,
-                    }),
-                  });
-
-                  const data = await res.json();
-
-                  if (!res.ok) {
-                    alert(data.error || "Checkout failed");
-                    return;
-                  }
-
-                  if (data.url) {
-                    window.location.href = data.url;
-                    return;
-                  }
-
-                  alert("No checkout URL returned");
-                } catch (err) {
-                  console.error("Checkout error:", err);
-                  alert("Checkout failed");
-                } finally {
-                  setLoading(false);
-                }
-              }}
-              disabled={loading || !isLoaded}
-              className="w-full rounded-xl bg-black py-3 text-white"
-            >
-              {loading ? "Redirecting..." : "Upgrade to Pro"}
-            </button>
-          )}
-        </div>
       </div>
     </div>
-  );
+  )
 }

@@ -1,0 +1,8 @@
+{
+  "arsenal": { "attack": 82, "defense": 75 },
+  "chelsea": { "attack": 70, "defense": 68 },
+  "barcelona": { "attack": 85, "defense": 72 },
+  "valencia": { "attack": 65, "defense": 66 },
+  "inter": { "attack": 78, "defense": 74 },
+  "roma": { "attack": 72, "defense": 70 }
+}
