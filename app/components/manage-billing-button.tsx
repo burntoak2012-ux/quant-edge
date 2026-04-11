@@ -22,7 +22,7 @@ export default function ManageBillingButton() {
   return (
     <button
       onClick={handleClick}
-      className="rounded-2xl border border-zinc-200 bg-white px-5 py-3 font-semibold text-zinc-900 transition hover:bg-zinc-50"
+      className="rounded-full bg-black px-4 py-2 font-medium text-white hover:opacity-90"
     >
       Manage Billing
     </button>

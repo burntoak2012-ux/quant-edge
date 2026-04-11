@@ -210,6 +210,10 @@ export default async function DashboardPage() {
           <h1 className="mt-4 text-5xl font-bold tracking-tight text-zinc-950">
             Model Overview
           </h1>
+          
+          <div className="mt-4">
+  <ManageBillingButton />
+</div>
           <p className="mt-4 max-w-3xl text-lg leading-8 text-zinc-600">
             A quick view of today’s board quality, signal concentration, and edge profile.
           </p>
