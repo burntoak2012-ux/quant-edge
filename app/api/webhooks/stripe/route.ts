@@ -1,40 +1,19 @@
-import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
-import fs from "fs"
-import path from "path"
+import { NextResponse } from "next/server"
+import { clerkClient } from "@clerk/nextjs/server"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-  apiVersion: "2026-03-25.dahlia",
+  apiVersion: "2024-06-20",
 })
 
-const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!
+export async function POST(req: Request) {
+  const signature = req.headers.get("stripe-signature")
 
-// 📁 path to paid users file
-const dataPath = path.join(
-  process.cwd(),
-  "python-engine",
-  "data",
-  "paid_users.json"
-)
-
-// ✅ helper: read users
-function readPaidUsers(): string[] {
-  try {
-    const raw = fs.readFileSync(dataPath, "utf-8")
-    return JSON.parse(raw)
-  } catch {
-    return []
+  if (!signature) {
+    return new NextResponse("Missing stripe signature", { status: 400 })
   }
-}
 
-// ✅ helper: save users
-function savePaidUsers(users: string[]) {
-  fs.writeFileSync(dataPath, JSON.stringify(users, null, 2))
-}
-
-export async function POST(req: NextRequest) {
   const body = await req.text()
-  const signature = req.headers.get("stripe-signature")!
 
   let event: Stripe.Event
 
@@ -42,33 +21,49 @@ export async function POST(req: NextRequest) {
     event = stripe.webhooks.constructEvent(
       body,
       signature,
-      endpointSecret
+      process.env.STRIPE_WEBHOOK_SECRET as string
     )
   } catch (err: any) {
-    console.error("❌ Webhook error:", err.message)
+    console.error("Webhook signature error:", err.message)
     return new NextResponse(`Webhook Error: ${err.message}`, { status: 400 })
   }
 
-  // ✅ HANDLE PAYMENT SUCCESS
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object as Stripe.Checkout.Session
+  try {
+    const client = await clerkClient()
 
-    const clerkUserId = session.metadata?.clerkUserId
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object as Stripe.Checkout.Session
+      const clerkUserId = session.metadata?.clerkUserId
 
-    console.log("💰 PAYMENT SUCCESS:", clerkUserId)
+      if (clerkUserId) {
+        await client.users.updateUserMetadata(clerkUserId, {
+          publicMetadata: {
+            isPro: true,
+          },
+        })
 
-    if (clerkUserId) {
-      const users = readPaidUsers()
-
-      if (!users.includes(clerkUserId)) {
-        users.push(clerkUserId)
-        savePaidUsers(users)
-        console.log("✅ User saved:", clerkUserId)
-      } else {
-        console.log("ℹ️ User already exists")
+        console.log("User upgraded to PRO:", clerkUserId)
       }
     }
-  }
 
-  return NextResponse.json({ received: true })
+    if (event.type === "customer.subscription.deleted") {
+      const subscription = event.data.object as Stripe.Subscription
+      const clerkUserId = subscription.metadata?.clerkUserId
+
+      if (clerkUserId) {
+        await client.users.updateUserMetadata(clerkUserId, {
+          publicMetadata: {
+            isPro: false,
+          },
+        })
+
+        console.log("User downgraded from PRO:", clerkUserId)
+      }
+    }
+
+    return new NextResponse("OK", { status: 200 })
+  } catch (err: any) {
+    console.error("Webhook handler error:", err.message)
+    return new NextResponse("Webhook failed", { status: 500 })
+  }
 }

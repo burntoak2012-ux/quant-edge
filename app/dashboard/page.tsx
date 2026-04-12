@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server"
+import { auth, currentUser } from "@clerk/nextjs/server"
 import fs from "fs"
 import path from "path"
 import Link from "next/link"
@@ -27,26 +27,8 @@ type Signal = {
   lineup_adjusted?: boolean
 }
 
-function getPaidUsersPath() {
-  return path.join(process.cwd(), "python-engine", "data", "paid_users.json")
-}
-
 function getSignalsPath() {
   return path.join(process.cwd(), "python-engine", "output", "signals.json")
-}
-
-function getPaidUsers(): string[] {
-  try {
-    const filePath = getPaidUsersPath()
-
-    if (!fs.existsSync(filePath)) {
-      return []
-    }
-
-    return JSON.parse(fs.readFileSync(filePath, "utf-8"))
-  } catch {
-    return []
-  }
 }
 
 function getSignals(): Signal[] {
@@ -102,7 +84,12 @@ function StatCard({
   )
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ success?: string }>
+}) {
+  const params = searchParams ? await searchParams : undefined
   const { userId } = await auth()
 
   if (!userId) {
@@ -126,11 +113,13 @@ export default async function DashboardPage() {
     )
   }
 
-  const paidUsers = getPaidUsers()
-  const isPaidUser = paidUsers.includes(userId)
-  const signals = getSignals()
+  const user = await currentUser()
+  const isPaidUser = user?.publicMetadata?.isPro === true
+  const justPaid = params?.success === "true"
 
+  const signals = getSignals()
   const totalSignals = signals.length
+
   const avgConfidence =
     totalSignals > 0
       ? Math.round(
@@ -196,6 +185,13 @@ export default async function DashboardPage() {
                 A quick view of today’s board quality, signal concentration, and
                 edge profile.
               </p>
+
+              {justPaid && !isPaidUser ? (
+                <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700">
+                  Payment received. Your Pro access is being activated. Refresh in a few
+                  seconds.
+                </div>
+              ) : null}
 
               <div className="mt-6 flex flex-wrap gap-3">
                 {isPaidUser ? (

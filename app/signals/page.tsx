@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic"
 export const revalidate = 0
 
-import { auth } from "@clerk/nextjs/server"
+import { auth, currentUser } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
 import fs from "fs"
 import path from "path"
@@ -30,26 +30,8 @@ type Signal = {
   lineup_adjusted?: boolean
 }
 
-function getPaidUsersPath() {
-  return path.join(process.cwd(), "python-engine", "data", "paid_users.json")
-}
-
 function getSignalsPath() {
   return path.join(process.cwd(), "python-engine", "output", "signals.json")
-}
-
-function getPaidUsers(): string[] {
-  try {
-    const filePath = getPaidUsersPath()
-
-    if (!fs.existsSync(filePath)) {
-      return []
-    }
-
-    return JSON.parse(fs.readFileSync(filePath, "utf-8"))
-  } catch {
-    return []
-  }
 }
 
 function getSignals(): Signal[] {
@@ -92,10 +74,10 @@ export default async function SignalsPage() {
     redirect("/sign-in")
   }
 
-  const paidUsers = getPaidUsers()
-  const isPaidUser = paidUsers.includes(userId)
+  const user = await currentUser()
+  const isPro = user?.publicMetadata?.isPro === true
 
-  if (!isPaidUser) {
+  if (!isPro) {
     redirect("/pricing")
   }
 

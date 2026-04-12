@@ -8,7 +8,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
 })
 
 function getPaidUsersPath() {
-  return path.join(process.cwd(), "python-engine", "data", "paid_users.json")
+  return path.join(process.cwd(), "python-engine", "data")
 }
 
 function readPaidUsers(): string[] {
