@@ -2,10 +2,17 @@ import { auth } from "@clerk/nextjs/server"
 import { NextResponse } from "next/server"
 import Stripe from "stripe"
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string)
-
 export async function POST(req: Request) {
   try {
+    const secretKey = process.env.STRIPE_SECRET_KEY
+
+    if (!secretKey) {
+      console.error("Missing STRIPE_SECRET_KEY")
+      return new NextResponse("Stripe is not configured", { status: 500 })
+    }
+
+    const stripe = new Stripe(secretKey)
+
     const { userId } = await auth()
 
     if (!userId) {
@@ -29,6 +36,7 @@ export async function POST(req: Request) {
           clerkUserId: userId,
         },
       })
+
       customerId = customer.id
     }
 
@@ -52,10 +60,6 @@ export async function POST(req: Request) {
         },
       },
     })
-
-    if (!session.url) {
-      return new NextResponse("No checkout URL", { status: 500 })
-    }
 
     return NextResponse.json({ url: session.url })
   } catch (err: any) {
