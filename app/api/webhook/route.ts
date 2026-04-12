@@ -1,58 +1,59 @@
-import fs from "fs"
-import path from "path"
 import Stripe from "stripe"
 import { NextResponse } from "next/server"
+import fs from "fs"
+import path from "path"
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-  apiVersion: "2026-03-25.dahlia",
-})
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string)
 
 function getPaidUsersPath() {
-  return path.join(process.cwd(), "python-engine", "data")
+  return path.join(process.cwd(), "python-engine", "data", "paid_users.json")
 }
 
 function readPaidUsers(): string[] {
   try {
     const filePath = getPaidUsersPath()
-    const raw = fs.readFileSync(filePath, "utf-8")
-    const parsed = JSON.parse(raw)
 
-    if (!Array.isArray(parsed)) return []
-    return parsed.map((item) => String(item))
-  } catch {
+    if (!fs.existsSync(filePath)) {
+      return []
+    }
+
+    return JSON.parse(fs.readFileSync(filePath, "utf-8"))
+  } catch (error) {
+    console.error("Error reading paid_users.json:", error)
     return []
   }
 }
 
-function savePaidUsers(users: string[]) {
-  const filePath = getPaidUsersPath()
-  const dir = path.dirname(filePath)
-
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true })
+function writePaidUsers(users: string[]) {
+  try {
+    const filePath = getPaidUsersPath()
+    fs.writeFileSync(filePath, JSON.stringify(users, null, 2))
+  } catch (error) {
+    console.error("Error writing paid_users.json:", error)
   }
-
-  fs.writeFileSync(filePath, JSON.stringify(users, null, 2), "utf-8")
 }
 
 export async function POST(req: Request) {
-  const body = await req.text()
   const signature = req.headers.get("stripe-signature")
 
   if (!signature) {
     return new NextResponse("Missing stripe signature", { status: 400 })
   }
 
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+
+  if (!webhookSecret) {
+    return new NextResponse("Missing webhook secret", { status: 500 })
+  }
+
+  const body = await req.text()
+
   let event: Stripe.Event
 
   try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET as string
-    )
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
   } catch (err: any) {
-    console.error("Webhook signature error:", err.message)
+    console.error("Webhook signature verification failed:", err.message)
     return new NextResponse(`Webhook Error: ${err.message}`, { status: 400 })
   }
 
@@ -62,13 +63,14 @@ export async function POST(req: Request) {
       const clerkUserId = session.metadata?.clerkUserId
 
       if (clerkUserId) {
-        const users = readPaidUsers()
+        const paidUsers = readPaidUsers()
 
-        if (!users.includes(clerkUserId)) {
-          users.push(clerkUserId)
-          savePaidUsers(users)
-          console.log("Saved paid user:", clerkUserId)
+        if (!paidUsers.includes(clerkUserId)) {
+          paidUsers.push(clerkUserId)
+          writePaidUsers(paidUsers)
         }
+
+        console.log("Added paid user:", clerkUserId)
       }
     }
 
@@ -77,15 +79,16 @@ export async function POST(req: Request) {
       const clerkUserId = subscription.metadata?.clerkUserId
 
       if (clerkUserId) {
-        const users = readPaidUsers().filter((id) => id !== clerkUserId)
-        savePaidUsers(users)
+        const paidUsers = readPaidUsers().filter((id) => id !== clerkUserId)
+        writePaidUsers(paidUsers)
+
         console.log("Removed paid user:", clerkUserId)
       }
     }
 
     return new NextResponse("OK", { status: 200 })
-  } catch (err: any) {
-    console.error("Webhook handler error:", err.message)
+  } catch (error) {
+    console.error("Webhook handler failed:", error)
     return new NextResponse("Webhook handler failed", { status: 500 })
   }
 }
