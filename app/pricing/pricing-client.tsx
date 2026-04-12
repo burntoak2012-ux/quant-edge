@@ -6,28 +6,36 @@ export default function PricingClient() {
   const [loading, setLoading] = useState(false);
 
   const handleCheckout = async () => {
-    try {
-      setLoading(true);
+  try {
+    setLoading(true);
 
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-      });
+    const res = await fetch("/api/checkout", {
+      method: "POST",
+    });
 
-      const data = await res.json();
-
-      if (data.url) {
-        window.location.href = data.url;
-        return;
-      }
-
-      alert("No checkout URL returned");
-    } catch (error) {
-      console.error("Checkout error:", error);
-      alert("Checkout failed");
-    } finally {
-      setLoading(false);
+    // 🔥 THIS IS THE KEY PART
+    if (!res.ok) {
+      const text = await res.text();
+      alert("Checkout error: " + text);
+      return;
     }
-  };
+
+    const data = await res.json();
+
+    if (!data.url) {
+      alert("Checkout error: No checkout URL returned");
+      return;
+    }
+
+    window.location.href = data.url;
+
+  } catch (err: any) {
+    alert("Client error: " + err.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gray-50">
