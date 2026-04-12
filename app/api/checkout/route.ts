@@ -11,7 +11,7 @@ export async function POST(req: Request) {
       return new NextResponse("Stripe is not configured", { status: 500 })
     }
 
-    const stripe = new Stripe(secretKey)
+    const stripe = new Stripe(secretKey as string)
 
     const { userId } = await auth()
 
