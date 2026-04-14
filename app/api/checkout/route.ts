@@ -50,11 +50,12 @@ export async function POST(req: Request) {
       mode: "subscription",
       customer: customerId,
       line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
+  {
+    price: priceId,
+    quantity: 1,
+  },
+],
+
       success_url: `${origin}/success`,
       cancel_url: `${origin}/pricing`,
       metadata: {
