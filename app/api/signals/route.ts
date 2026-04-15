@@ -1,26 +1,40 @@
-import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import { auth } from "@clerk/nextjs/server"
+import { NextResponse } from "next/server"
+import { isPaidUser } from "@/lib/isPaidUser"
 
 export async function GET() {
   try {
-    const filePath = path.join(
-      process.cwd(),
-      "python-engine",
-      "output",
-      "signals.json"
-    );
+    const { userId } = await auth()
 
-    const jsonData = fs.readFileSync(filePath, "utf-8");
-    const signals = JSON.parse(jsonData);
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
 
-    return NextResponse.json(signals);
+    const paid = await isPaidUser(userId)
+
+    if (!paid) {
+      return NextResponse.json({ error: "Upgrade required" }, { status: 403 })
+    }
+
+    const signals = [
+      {
+        match: "Arsenal vs Chelsea",
+        pick: "Over 2.5",
+        confidence: 78,
+      },
+      {
+        match: "Madrid vs Sevilla",
+        pick: "Home Win",
+        confidence: 82,
+      },
+    ]
+
+    return NextResponse.json({ signals })
   } catch (error) {
-    console.error("Error reading signals:", error);
-
+    console.error("signals route error:", error)
     return NextResponse.json(
-      { error: "Failed to load signals" },
+      { error: "Internal server error" },
       { status: 500 }
-    );
+    )
   }
 }

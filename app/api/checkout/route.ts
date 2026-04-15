@@ -1,80 +1,70 @@
-import { auth } from "@clerk/nextjs/server"
 import { NextResponse } from "next/server"
+import { auth } from "@clerk/nextjs/server"
 import Stripe from "stripe"
 
-export async function POST(req: Request) {
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+
+export async function GET() {
+  return NextResponse.json({ ok: true, route: "checkout" })
+}
+
+export async function POST() {
   try {
-    const secretKey = process.env.STRIPE_SECRET_KEY
-
-    if (!secretKey) {
-      console.error("Missing STRIPE_SECRET_KEY")
-      return new NextResponse("Stripe not configured", { status: 500 })
-    }
-
-    const stripe = new Stripe(secretKey)
-
     const { userId } = await auth()
 
     if (!userId) {
-      return new NextResponse("Unauthorized", { status: 401 })
-    }
-
-    const origin = new URL(req.url).origin
-
-    const customers = await stripe.customers.search({
-      query: `metadata['clerkUserId']:'${userId}'`,
-      limit: 1,
-    })
-
-    let customerId: string
-
-    if (customers.data.length > 0) {
-      customerId = customers.data[0].id
-    } else {
-      const customer = await stripe.customers.create({
-        metadata: {
-          clerkUserId: userId,
-        },
-      })
-
-      customerId = customer.id
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const priceId = process.env.STRIPE_PRICE_ID
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL
 
     if (!priceId) {
-      return new NextResponse("Missing STRIPE_PRICE_ID", { status: 500 })
+      return NextResponse.json(
+        { error: "Missing STRIPE_PRICE_ID" },
+        { status: 500 }
+      )
+    }
+
+    if (!appUrl) {
+      return NextResponse.json(
+        { error: "Missing NEXT_PUBLIC_APP_URL" },
+        { status: 500 }
+      )
     }
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      customer: customerId,
+      payment_method_types: ["card"],
       line_items: [
-  {
-    price: priceId,
-    quantity: 1,
-  },
-],
-
-      success_url: `${origin}/success`,
-      cancel_url: `${origin}/pricing`,
-      metadata: {
-        clerkUserId: userId,
-      },
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
       subscription_data: {
+        trial_period_days: 3,
         metadata: {
           clerkUserId: userId,
         },
       },
+      metadata: {
+        clerkUserId: userId,
+      },
+      success_url: `${appUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${appUrl}/pricing`,
     })
 
     return NextResponse.json({ url: session.url })
-  } catch (err: any) {
-    console.error("FULL CHECKOUT ERROR:", err)
-    console.error("MESSAGE:", err?.message)
+  } catch (error) {
+    console.error("Checkout error:", error)
 
-    return new NextResponse("Error creating checkout session", {
-      status: 500,
-    })
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error ? error.message : "Checkout failed",
+      },
+      { status: 500 }
+    )
   }
 }

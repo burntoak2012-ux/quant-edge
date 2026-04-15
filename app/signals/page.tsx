@@ -1,59 +1,52 @@
-import { auth } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
-import fs from "fs"
-import path from "path"
-
-function getPaidUsersPath() {
-  return path.join(process.cwd(), "python-engine", "data", "paid_users.json")
-}
-
-function getPaidUsers(): string[] {
-  try {
-    const filePath = getPaidUsersPath()
-
-    if (!fs.existsSync(filePath)) {
-      return []
-    }
-
-    return JSON.parse(fs.readFileSync(filePath, "utf-8"))
-  } catch {
-    return []
-  }
-}
 
 export default async function SignalsPage() {
-  const { userId } = await auth()
+  const res = await fetch("http://localhost:3000/api/access-status", {
+    cache: "no-store",
+  })
 
-  if (!userId) {
-    redirect("/sign-in")
-  }
+  const data = await res.json()
 
-  const paidUsers = getPaidUsers()
-  const isPaid = paidUsers.includes(userId)
-
-  if (!isPaid) {
+  if (!data.hasAccess) {
     redirect("/pricing")
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-6 py-10">
-      <section className="rounded-[32px] border border-zinc-200 bg-white p-8 shadow-sm">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-400">
-          Quant Edge Pro
-        </p>
+    <main className="min-h-screen bg-white text-black">
+      <div className="max-w-5xl mx-auto px-6 py-16">
 
-        <h1 className="mt-4 text-5xl font-bold tracking-tight text-zinc-950">
-          Today’s Signals
-        </h1>
-
-        <p className="mt-4 text-lg leading-8 text-zinc-600">
-          Premium football signals unlocked for paid users.
-        </p>
-
-        <div className="mt-6 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 inline-flex text-sm font-medium text-emerald-700">
-          Pro access active
+        <div className="mb-10">
+          <h1 className="text-3xl font-bold">Today's Signals</h1>
+          <p className="text-gray-600">
+            Premium football signals unlocked.
+          </p>
         </div>
-      </section>
+
+        <div className="grid md:grid-cols-2 gap-6">
+
+          <div className="p-6 rounded-xl border shadow-sm">
+            <h2 className="font-semibold text-lg">
+              Arsenal vs Chelsea
+            </h2>
+            <p className="text-gray-600 mt-2">Over 2.5</p>
+            <p className="text-green-600 mt-2 font-medium">
+              Confidence: 78%
+            </p>
+          </div>
+
+          <div className="p-6 rounded-xl border shadow-sm">
+            <h2 className="font-semibold text-lg">
+              Madrid vs Sevilla
+            </h2>
+            <p className="text-gray-600 mt-2">Home Win</p>
+            <p className="text-green-600 mt-2 font-medium">
+              Confidence: 82%
+            </p>
+          </div>
+
+        </div>
+
+      </div>
     </main>
   )
 }

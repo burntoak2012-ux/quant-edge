@@ -1,58 +1,66 @@
-"use client";
+"use client"
 
-import { useState } from "react";
+import { useState } from "react"
 
 export default function PricingClient() {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false)
 
-  const handleCheckout = async () => {
+  const handleUpgrade = async () => {
+    console.log("CLICK WORKED")
+
     try {
-      setLoading(true);
+      setLoading(true)
 
       const res = await fetch("/api/checkout", {
         method: "POST",
-      });
+      })
 
-      // 🔴 Show backend error clearly
-      if (!res.ok) {
-        const text = await res.text();
-        alert("Checkout error: " + text);
-        return;
+      const text = await res.text()
+      console.log("Raw checkout response:", text)
+
+      let data: { url?: string; error?: string } = {}
+
+      try {
+        data = JSON.parse(text)
+      } catch {
+        throw new Error("API route not found or invalid response")
       }
 
-      const data = await res.json();
-
-      // 🔴 No URL returned
-      if (!data.url) {
-        alert("Checkout error: No checkout URL returned");
-        return;
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || "Checkout failed")
       }
 
-      // ✅ Redirect to Stripe
-      window.location.href = data.url;
-    } catch (err: any) {
-      alert("Client error: " + err.message);
-    } finally {
-      setLoading(false);
+      window.location.href = data.url
+    } catch (error) {
+      console.error("Upgrade error:", error)
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong. Try again."
+      )
+      setLoading(false)
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-5xl mx-auto px-6 py-16 text-center">
-        <h1 className="text-4xl font-bold mb-6">Upgrade to Pro</h1>
-        <p className="text-gray-600 mb-10">
-          Get full access to premium signals and insights.
-        </p>
+    <main className="min-h-screen bg-white text-black">
+      <div className="mx-auto max-w-5xl px-6 py-16">
+        <div className="max-w-md">
+          <h1 className="text-3xl font-bold">Upgrade to Pro</h1>
+          <p className="mt-2 text-gray-600">
+            Unlock all signals and full edge analysis.
+          </p>
 
-        <button
-          onClick={handleCheckout}
-          disabled={loading}
-          className="bg-black text-white px-8 py-4 rounded-lg text-lg hover:opacity-80 transition disabled:opacity-50"
-        >
-          {loading ? "Processing..." : "Upgrade to Pro"}
-        </button>
+          <button
+            type="button"
+            onClick={handleUpgrade}
+            disabled={loading}
+            className="mt-6 rounded-lg bg-black px-5 py-3 text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {loading ? "Redirecting..." : "Start Free Trial"}
+          </button>
+        </div>
       </div>
-    </div>
-  );
+    </main>
+  )
 }

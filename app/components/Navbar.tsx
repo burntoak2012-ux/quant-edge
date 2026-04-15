@@ -1,52 +1,74 @@
-import Link from "next/link";
-import { auth } from "@clerk/nextjs/server";
-import { UserButton } from "@clerk/nextjs";
+"use client"
 
-export default async function Navbar() {
-  const { userId } = await auth();
+import { useEffect, useState } from "react"
+import { UserButton } from "@clerk/nextjs"
+
+export default function Navbar() {
+  const [data, setData] = useState<any>(null)
+
+  useEffect(() => {
+    fetch("/api/access-status")
+      .then(res => res.json())
+      .then(setData)
+  }, [])
+
+  const hasAccess = data?.hasAccess
+  const isTrial = data?.subscriptionStatus === "trialing"
+  const daysLeft = data?.trialDaysLeft
 
   return (
-    <nav className="border-b bg-white">
-      <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 font-semibold text-lg">
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-black text-white">
-            Q
-          </span>
-          QuantEdge
-        </Link>
+    <nav className="w-full border-b bg-white">
+      <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+
+        {/* Logo */}
+        <h1 className="font-bold text-lg">QuantEdge</h1>
 
         <div className="flex items-center gap-4">
-          <Link href="/pricing" className="text-sm text-gray-600 hover:text-black">
-            Pricing
-          </Link>
 
-          {userId ? (
-            <>
-              <Link
-                href="/dashboard"
-                className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white"
-              >
-                Dashboard
-              </Link>
-              <UserButton />
-            </>
-          ) : (
-            <>
-              <Link href="/sign-in" className="text-sm text-gray-600 hover:text-black">
-                Sign in
-              </Link>
-              <Link
-                href="/sign-up"
-                className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white"
-              >
-                Get started
-              </Link>
-            </>
+          <a href="/signals">Signals</a>
+          <a href="/pricing">Pricing</a>
+
+          {/* Trial badge */}
+          {isTrial && daysLeft > 0 && (
+            <span className="text-sm text-green-600">
+              Trial: {daysLeft}d left
+            </span>
           )}
+
+          {/* Active badge */}
+          {hasAccess && !isTrial && (
+            <span className="text-sm text-green-600">
+              Pro Active
+            </span>
+          )}
+
+          {/* Upgrade button */}
+          {!hasAccess && (
+            <a
+              href="/pricing"
+              className="px-4 py-2 bg-black text-white rounded-lg"
+            >
+              Start Free Trial
+            </a>
+          )}
+
+          {/* Billing */}
+          {data?.signedIn && (
+            <button
+              onClick={async () => {
+                const res = await fetch("/api/portal", { method: "POST" })
+                const d = await res.json()
+                window.location.href = d.url
+              }}
+              className="text-sm text-gray-600"
+            >
+              Manage Billing
+            </button>
+          )}
+
+          <UserButton />
         </div>
       </div>
     </nav>
-  );
+  )
 }
-
-
