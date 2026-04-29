@@ -1,20 +1,25 @@
 {
   "name": "quant-edge",
+  "type": "module",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "generate:signals": "ts-node scripts/generate-signals.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.0.12",
     "@supabase/supabase-js": "^2.103.0",
+    "child_process": "^1.0.2",
+    "dotenv": "^17.4.2",
     "next": "16.2.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "stripe": "^21.0.1"
+    "stripe": "^21.0.1",
+    "ts-node": "^10.9.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

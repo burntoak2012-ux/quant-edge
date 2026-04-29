@@ -1,65 +1,57 @@
 "use client"
 
-import { useState } from "react"
+import { useUser, SignInButton } from "@clerk/nextjs"
 
 export default function PricingClient() {
-  const [loading, setLoading] = useState(false)
+  const { isSignedIn } = useUser()
 
-  const handleUpgrade = async () => {
-    console.log("CLICK WORKED")
+  async function handleUpgrade() {
+  try {
+    const res = await fetch("/api/create-checkout", {
+      method: "POST",
+    })
 
-    try {
-      setLoading(true)
+    const data = await res.json()
 
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-      })
-
-      const text = await res.text()
-      console.log("Raw checkout response:", text)
-
-      let data: { url?: string; error?: string } = {}
-
-      try {
-        data = JSON.parse(text)
-      } catch {
-        throw new Error("API route not found or invalid response")
-      }
-
-      if (!res.ok || !data.url) {
-        throw new Error(data.error || "Checkout failed")
-      }
-
+    if (res.ok && data.url) {
       window.location.href = data.url
-    } catch (error) {
-      console.error("Upgrade error:", error)
-      alert(
-        error instanceof Error
-          ? error.message
-          : "Something went wrong. Try again."
-      )
-      setLoading(false)
+      return
     }
+
+    throw new Error(data?.error || "Checkout failed")
+  } catch (err) {
+    console.error("Error:", err)
+    alert("Checkout failed. Check terminal output.")
   }
+}
 
   return (
     <main className="min-h-screen bg-white text-black">
-      <div className="mx-auto max-w-5xl px-6 py-16">
-        <div className="max-w-md">
-          <h1 className="text-3xl font-bold">Upgrade to Pro</h1>
-          <p className="mt-2 text-gray-600">
-            Unlock all signals and full edge analysis.
-          </p>
+      <div className="max-w-4xl mx-auto px-6 py-20 text-center">
 
+        <h1 className="text-4xl font-bold mb-4">
+          Upgrade to Pro
+        </h1>
+
+        <p className="text-gray-600 mb-8">
+          Unlock all signals and full edge analysis.
+        </p>
+
+        {!isSignedIn ? (
+          <SignInButton mode="modal">
+            <button className="px-6 py-3 bg-black text-white rounded-lg">
+              Sign in to upgrade
+            </button>
+          </SignInButton>
+        ) : (
           <button
-            type="button"
             onClick={handleUpgrade}
-            disabled={loading}
-            className="mt-6 rounded-lg bg-black px-5 py-3 text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            className="px-6 py-3 bg-black text-white rounded-lg"
           >
-            {loading ? "Redirecting..." : "Start Free Trial"}
+            Start Free Trial
           </button>
-        </div>
+        )}
+
       </div>
     </main>
   )

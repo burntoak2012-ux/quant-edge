@@ -1,49 +1,39 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 
 export default function SuccessPage() {
-  const [ready, setReady] = useState(false)
+  const [done, setDone] = useState(false)
 
   useEffect(() => {
-    const interval = setInterval(async () => {
-      const res = await fetch("/api/access-status")
-      const data = await res.json()
-
-      if (data.hasAccess) {
-        setReady(true)
-        window.location.href = "/signals"
+    async function activate() {
+      try {
+        await fetch("/api/activate-user", { method: "POST" })
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setDone(true)
       }
-    }, 1500)
+    }
 
-    return () => clearInterval(interval)
+    activate()
   }, [])
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-white">
-      <div className="text-center">
-
-        <h1 className="text-2xl font-bold mb-4">
-          Payment Successful 🎉
-        </h1>
-
+    <main className="min-h-screen bg-white text-black">
+      <div className="max-w-3xl mx-auto px-6 py-24 text-center">
+        <h1 className="text-3xl font-bold mb-4">Payment Successful 🎉</h1>
         <p className="text-gray-600 mb-6">
-          Activating your access...
+          {done ? "Access activated." : "Activating your access..."}
         </p>
 
-        <div className="animate-pulse text-gray-400">
-          Please wait...
-        </div>
-
-        <div className="mt-6">
-          <a
-            href="/signals"
-            className="text-sm underline text-gray-600"
-          >
-            Go to Signals
-          </a>
-        </div>
-
+        <Link
+          href="/signals"
+          className="inline-block px-6 py-3 bg-black text-white rounded-lg"
+        >
+          Go to Signals
+        </Link>
       </div>
     </main>
   )

@@ -1,37 +1,31 @@
+import { auth } from "@clerk/nextjs/server"
 import { NextResponse } from "next/server"
 import Stripe from "stripe"
-import { currentUser } from "@clerk/nextjs/server"
-import { createClient } from "@supabase/supabase-js"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+export async function GET() {
+  const { userId } = await auth()
 
-export async function POST() {
-  const user = await currentUser()
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  if (!userId) {
+    return NextResponse.redirect("http://localhost:3000/")
   }
 
-  // get user from DB
-  const { data } = await supabase
-    .from("paid_users")
-    .select("*")
-    .eq("clerk_user_id", user.id)
-    .single()
+  const sessions = await stripe.checkout.sessions.list({
+    limit: 1,
+  })
 
-  if (!data?.stripe_customer_id) {
-    return NextResponse.json({ error: "No customer found" }, { status: 400 })
+  const customer = sessions.data[0]?.customer as string
+
+  if (!customer) {
+    return NextResponse.redirect("http://localhost:3000/pricing")
   }
 
-  const session = await stripe.billingPortal.sessions.create({
-    customer: data.stripe_customer_id,
+  const portalSession = await stripe.billingPortal.sessions.create({
+    customer,
     return_url: "http://localhost:3000/signals",
   })
 
-  return NextResponse.json({ url: session.url })
+  return NextResponse.redirect(portalSession.url)
+
 }

@@ -7,10 +7,8 @@ export default function Navbar() {
   const [data, setData] = useState<any>(null)
 
   useEffect(() => {
-    fetch("/api/access-status")
-      .then(res => res.json())
-      .then(setData)
-  }, [])
+  setData({ hasAccess: true })
+}, [])
 
   const hasAccess = data?.hasAccess
   const isTrial = data?.subscriptionStatus === "trialing"
