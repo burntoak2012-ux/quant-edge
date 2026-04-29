@@ -3,6 +3,8 @@ import { auth } from "@clerk/nextjs/server"
 import Stripe from "stripe"
 import { supabase } from "@/lib/supabase"
 
+export const dynamic = "force-dynamic"
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 export async function POST() {
