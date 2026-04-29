@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server"
 import { NextResponse } from "next/server"
-import { isPaidUser } from "@/lib/isPaidUser"
+import { isProUser } from "@/lib/isPaidUser"
 
 export async function GET() {
   try {
@@ -10,7 +10,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const paid = await isPaidUser(userId)
+    const paid = await isProUser()
 
     if (!paid) {
       return NextResponse.json({ error: "Upgrade required" }, { status: 403 })
