@@ -91,14 +91,15 @@ function buildSignal(home: string, away: string, odds: any) {
   if (selectedOdds > 1.85) return null
 
   return {
-    match: `${home} vs ${away}`,
-    pick,
-    market: "Match Winner",
-    odds: selectedOdds,
-    confidence,
-    edge: 0,
-    is_active: true,
-  }
+  match: `${home} vs ${away}`,
+  pick,
+  market: "Match Winner",
+  odds: selectedOdds,
+  confidence,
+  roi,
+  edge: 0,
+  is_active: true,
+}
 }
 
 async function main() {
